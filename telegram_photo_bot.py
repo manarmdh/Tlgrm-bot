@@ -1,43 +1,22 @@
-"""
-بوت تيليغرام لجمع الصور حسب النوع والولاية
-الخطوات: /start → اختيار نوع → اختيار ولاية → إرسال صور
-"""
-
 import os
 import logging
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application,
-    CommandHandler,
-    CallbackQueryHandler,
-    MessageHandler,
-    filters,
-    ContextTypes,
-    ConversationHandler,
-)
+    Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler,)
 
-# ─── الإعدادات ────────────────────────────────────────────────────────────────
 import os
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8723529865:AAGaZkVpX2mSKL6cNWUfhy-rsdPhWfREcaQ")
-
-ADMIN_IDS = [5842678175, 1005258580]  # @mnr_mdh و @Abdelmoudjib
-
-# ─── حالات المحادثة ────────────────────────────────────────────────────────────
+ADMIN_IDS = [5842678175, 1005258580]  
 CHOOSE_TYPE, CHOOSE_WILAYA, SEND_PHOTOS = range(3)
 
-# ─── أنواع الصور ───────────────────────────────────────────────────────────────
 PHOTO_TYPES = [
-    "📖 صور المقرأة",
-    "🎓 صور الأكاديمية",
-    "🏕️ صور المخيمات الحضورية",
-    "💻 صور المخيمات الإلكترونية",
-    "🕌 صور المدارس القرآنية النموذجية",
-]
-
-# ─── 48 ولاية جزائرية ──────────────────────────────────────────────────────────
+    " صور المقرأة",
+    " صور الأكاديمية",
+    " صور المخيمات الحضورية",
+    " صور المخيمات الإلكترونية",
+    " صور المدارس القرآنية النموذجية", ]
 WILAYAS = [
-    # الولايات الـ 48 الأصلية
     "01-أدرار",            "02-الشلف",            "03-الأغواط",          "04-أم البواقي",
     "05-باتنة",            "06-بجاية",            "07-بسكرة",            "08-بشار",
     "09-البليدة",          "10-البويرة",          "11-تمنراست",          "12-تبسة",
@@ -50,24 +29,16 @@ WILAYAS = [
     "37-تندوف",            "38-تيسمسيلت",        "39-الوادي",           "40-خنشلة",
     "41-سوق أهراس",        "42-تيبازة",          "43-ميلة",             "44-عين الدفلى",
     "45-النعامة",          "46-عين تموشنت",      "47-غرداية",           "48-غليزان",
-    # الولايات الجديدة
     "49-تيميمون",          "50-برج باجي مختار",  "51-أولاد جلال",       "52-بني عباس",
     "53-عين صالح",         "54-عين قزام",        "55-تقرت",             "56-جانت",
     "57-المغير",           "58-المنيعة",          "59-بريكة",
 ]
-
 WILAYAS_PER_PAGE = 12
-
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  مساعدات الكيبورد
-# ══════════════════════════════════════════════════════════════════════════════
 
 def build_type_keyboard() -> InlineKeyboardMarkup:
     buttons = [
@@ -76,7 +47,6 @@ def build_type_keyboard() -> InlineKeyboardMarkup:
     ]
     keyboard = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
     return InlineKeyboardMarkup(keyboard)
-
 
 def build_wilaya_keyboard(page: int = 0) -> InlineKeyboardMarkup:
     start = page * WILAYAS_PER_PAGE
@@ -104,10 +74,6 @@ def build_wilaya_keyboard(page: int = 0) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  دالة مساعدة: إرسال رسالة لكل الأدمنية
-# ══════════════════════════════════════════════════════════════════════════════
-
 async def notify_admins_photo(context, file_id: str, caption: str):
     """يبعث الصورة لكل أدمن في ADMIN_IDS"""
     for admin_id in ADMIN_IDS:
@@ -118,8 +84,7 @@ async def notify_admins_photo(context, file_id: str, caption: str):
                 caption=caption,
             )
         except Exception as e:
-            logger.warning(f"ما قدرش يبعث للأدمن {admin_id}: {e}")
-
+            logger.warning(f"لم يستطيع الإرسال للادمين {admin_id}: {e}")
 
 async def notify_admins_text(context, text: str):
     """يبعث رسالة نصية لكل أدمن في ADMIN_IDS"""
@@ -127,22 +92,16 @@ async def notify_admins_text(context, text: str):
         try:
             await context.bot.send_message(chat_id=admin_id, text=text)
         except Exception as e:
-            logger.warning(f"ما قدرش يبعث للأدمن {admin_id}: {e}")
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  هاندلرز المحادثة
-# ══════════════════════════════════════════════════════════════════════════════
+            logger.warning(f"لم يستطيع الإرسال للادمين {admin_id}: {e}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
     await update.message.reply_text(
-        "📸 *أهلاً بك!*\n\nاختر *نوع* الصور اللي تبغي تبعث:",
+        "📸 *أهلاً بك!*\n\n اختر *نوع* الصور اللي تُريد ارسالها:",
         parse_mode="Markdown",
         reply_markup=build_type_keyboard(),
     )
     return CHOOSE_TYPE
-
 
 async def handle_type_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -158,7 +117,6 @@ async def handle_type_choice(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup=build_wilaya_keyboard(page=0),
     )
     return CHOOSE_WILAYA
-
 
 async def handle_page_nav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -179,7 +137,6 @@ async def handle_noop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 async def handle_wilaya_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-
     _, idx = query.data.split("|")
     chosen_wilaya = WILAYAS[int(idx)]
     context.user_data["wilaya"]  = chosen_wilaya
@@ -187,7 +144,6 @@ async def handle_wilaya_choice(update: Update, context: ContextTypes.DEFAULT_TYP
 
     photo_type = context.user_data["photo_type"]
 
-    # إنشاء مجلد الحفظ
     folder = os.path.join("photos", photo_type.replace(" ", "_"), chosen_wilaya)
     os.makedirs(folder, exist_ok=True)
     context.user_data["save_folder"] = folder
@@ -196,17 +152,15 @@ async def handle_wilaya_choice(update: Update, context: ContextTypes.DEFAULT_TYP
         f"✅ *{photo_type}* | 📍 *{chosen_wilaya}*\n\n"
         "الآن ابعث الصور 📤\n"
         "_(يمكنك إرسال أكثر من صورة)_\n\n"
-        "اكتب /done إذا خلصت، أو /cancel لإلغاء",
+        "اكتب /done إذ انتهيت !، أو /cancel لإلغاء",
         parse_mode="Markdown",
     )
     return SEND_PHOTOS
-
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     photo  = update.message.photo[-1]  # أعلى جودة
     file   = await photo.get_file()
 
-    # حفظ الصورة محلياً
     folder    = context.user_data["save_folder"]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     filename  = os.path.join(folder, f"{timestamp}.jpg")
@@ -219,8 +173,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         f"✅ تم استقبال الصورة ({count})\n"
         "أرسل المزيد أو اكتب /done للإنهاء"
     )
-
-    # إشعار لكل الأدمنية
     user     = update.effective_user
     username = f"@{user.username}" if user.username else "بدون يوزرنيم"
     caption  = (
@@ -231,10 +183,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         f"📍 الولاية: {context.user_data['wilaya']}"
     )
     await notify_admins_photo(context, photo.file_id, caption)
-
     return SEND_PHOTOS
-
-
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     count = len(context.user_data.get("photos", []))
     ptype = context.user_data.get("photo_type", "")
@@ -243,11 +192,10 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     if count == 0:
         await update.message.reply_text(
-            "⚠️ لم تُرسل أي صورة!\nابعث على الأقل صورة واحدة أو اكتب /cancel"
+            "⚠️ لم تُرسل أي صورة!\nارسل على الأقل صورة واحدة أو اكتب /cancel"
         )
         return SEND_PHOTOS
 
-    # رسالة للمستخدم
     await update.message.reply_text(
         f"🎉 *شكراً!* تم استقبال *{count}* صورة\n"
         f"🏷️ النوع: {ptype}\n"
@@ -256,7 +204,6 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         parse_mode="Markdown",
     )
 
-    # إشعار ختامي لكل الأدمنية
     username = f"@{user.username}" if user.username else "بدون يوزرنيم"
     await notify_admins_text(
         context,
@@ -270,7 +217,6 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
     return ConversationHandler.END
 
-
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
     await update.message.reply_text(
@@ -278,10 +224,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     return ConversationHandler.END
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  تشغيل البوت
-# ══════════════════════════════════════════════════════════════════════════════
 
 def main():
     os.makedirs("photos", exist_ok=True)
@@ -309,7 +251,7 @@ def main():
 
     app.add_handler(conv)
 
-    logger.info("البوت شغال ✅")
+    logger.info("البوت يشتغل ✅")
     app.run_polling(drop_pending_updates=True)
 
 
